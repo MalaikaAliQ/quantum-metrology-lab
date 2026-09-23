@@ -16,19 +16,24 @@ export default function QuantumSensingSection({ isActive }) {
   const animationFrameRef = useRef(null);
   const pulseRef = useRef({ progress: 0, isPulsing: false });
 
-  // Effective Super-resolution factor for NOON state visualization
-  const nEff = Math.min(8, Math.max(2, Math.round(Math.log2(nPhotons) + 1)));
+  // Safe numerical calculations
+  const thetaNum = typeof theta === 'number' && !isNaN(theta) ? theta : 1.57;
+  const nPhotonsNum = typeof nPhotons === 'number' && !isNaN(nPhotons) ? nPhotons : 100;
 
-  // Compute intensities
-  const p0 = stateMode === 'coherent'
-    ? Math.cos(theta / 2) ** 2
-    : Math.cos((nEff * theta) / 2) ** 2;
+  // Effective Super-resolution factor for NOON state visualization
+  const nEff = Math.min(8, Math.max(2, Math.round(Math.log2(nPhotonsNum) + 1))) || 4;
+
+  // Compute intensities safely
+  const rawP0 = stateMode === 'coherent'
+    ? Math.cos(thetaNum / 2) ** 2
+    : Math.cos((nEff * thetaNum) / 2) ** 2;
+  const p0 = isNaN(rawP0) ? 0.5 : Math.max(0, Math.min(1, rawP0));
   const p1 = 1 - p0;
 
-  const sqlVal = (1 / Math.sqrt(nPhotons)).toFixed(4);
-  const hlVal = (1 / nPhotons).toFixed(4);
-  const sensitivityGain = Math.sqrt(nPhotons).toFixed(1);
-  const thetaDeg = (theta * 180 / Math.PI).toFixed(0);
+  const sqlVal = (1 / Math.sqrt(nPhotonsNum)).toFixed(4);
+  const hlVal = (1 / nPhotonsNum).toFixed(4);
+  const sensitivityGain = Math.sqrt(nPhotonsNum).toFixed(1);
+  const thetaDeg = (thetaNum * 180 / Math.PI).toFixed(0);
 
   // 3D Nodes
   const mziNodes = {
@@ -105,13 +110,15 @@ export default function QuantumSensingSection({ isActive }) {
     };
   }, []);
 
-  // Main 3D Canvas Render Loop with fixed sizing
+  // Main 3D Canvas Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     const isEntangled = stateMode === 'n00n';
 
     const resizeCanvas = () => {
@@ -239,20 +246,20 @@ export default function QuantumSensingSection({ isActive }) {
       drawComponent(mziNodes.mBot, 'MIRROR 4', '#64748b', 6);
       drawComponent(
         mziNodes.cell,
-        `PHASE CELL [θ=${theta.toFixed(2)}]`,
+        `PHASE CELL [θ=${thetaNum.toFixed(2)}]`,
         '#d97706',
         9
       );
       drawComponent(mziNodes.bs2, 'BS 2 (RECOMB)', '#0284c7', 7);
       drawComponent(
         mziNodes.det0,
-        `DET 0 [${(p0 * nPhotons).toFixed(0)}]`,
+        `DET 0 [${(p0 * nPhotonsNum).toFixed(0)}]`,
         isEntangled ? '#c084fc' : '#10b981',
         8
       );
       drawComponent(
         mziNodes.det1,
-        `DET 1 [${(p1 * nPhotons).toFixed(0)}]`,
+        `DET 1 [${(p1 * nPhotonsNum).toFixed(0)}]`,
         isEntangled ? '#ec4899' : '#a855f7',
         8
       );
@@ -326,15 +333,15 @@ export default function QuantumSensingSection({ isActive }) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, nEff, projectMzi, isActive]);
+  }, [rotX, rotY, thetaNum, nPhotonsNum, stateMode, p0, p1, nEff, projectMzi, isActive]);
 
-  // Generate polyline points for baseline and super-resolution curves safely
+  // Pre-generate polyline points safely
   const coherentPoints = [];
   for (let x = 0; x <= 620; x += 4) {
     const rad = (x / 620) * Math.PI * 2;
     const val = Math.cos(rad / 2) ** 2;
     const py = 130 - val * 105;
-    coherentPoints.push(`${50 + x},${py.toFixed(1)}`);
+    coherentPoints.push(`${(50 + x).toFixed(1)},${py.toFixed(1)}`);
   }
 
   const noonPoints = [];
@@ -342,11 +349,11 @@ export default function QuantumSensingSection({ isActive }) {
     const rad = (x / 620) * Math.PI * 2;
     const val = Math.cos((nEff * rad) / 2) ** 2;
     const py = 130 - val * 105;
-    noonPoints.push(`${50 + x},${py.toFixed(1)}`);
+    noonPoints.push(`${(50 + x).toFixed(1)},${py.toFixed(1)}`);
   }
 
-  const currentX = 50 + (theta / (Math.PI * 2)) * 620;
-  const currentY = 130 - p0 * 105;
+  const currentX = (50 + (thetaNum / (Math.PI * 2)) * 620).toFixed(1);
+  const currentY = (130 - p0 * 105).toFixed(1);
   const activeColor = stateMode === 'n00n' ? '#7c3aed' : '#2563eb';
 
   return (
@@ -361,28 +368,28 @@ export default function QuantumSensingSection({ isActive }) {
           <div className="slider-group">
             <label>
               <b>External Phase Shift (&theta;):</b>{' '}
-              <span>{theta.toFixed(2)} rad ({thetaDeg}&deg;)</span>
+              <span>{thetaNum.toFixed(2)} rad ({thetaDeg}&deg;)</span>
             </label>
             <input
               type="range"
               min="0"
               max="6.28"
               step="0.04"
-              value={theta}
+              value={thetaNum}
               onChange={(e) => setTheta(parseFloat(e.target.value))}
             />
           </div>
 
           <div className="slider-group">
             <label>
-              <b>Photon Flux (N):</b> <span>{nPhotons} photons</span>
+              <b>Photon Flux (N):</b> <span>{nPhotonsNum} photons</span>
             </label>
             <input
               type="range"
               min="10"
               max="1000"
               step="10"
-              value={nPhotons}
+              value={nPhotonsNum}
               onChange={(e) => setNPhotons(parseInt(e.target.value, 10))}
             />
           </div>
@@ -494,17 +501,17 @@ export default function QuantumSensingSection({ isActive }) {
           <polyline
             fill="none"
             stroke="#2563eb"
-            strokeWidth={stateMode === 'coherent' ? '3' : '1.5'}
-            strokeOpacity={stateMode === 'coherent' ? '1' : '0.4'}
+            strokeWidth={stateMode === 'coherent' ? 3 : 1.5}
+            strokeOpacity={stateMode === 'coherent' ? 1 : 0.4}
             points={coherentPoints.join(' ')}
           />
 
-          {/* NOON Entangled curve path (nEff super-resolution cycles) */}
+          {/* NOON Entangled curve path */}
           <polyline
             fill="none"
             stroke="#7c3aed"
-            strokeWidth={stateMode === 'n00n' ? '3' : '1.5'}
-            strokeOpacity={stateMode === 'n00n' ? '1' : '0.3'}
+            strokeWidth={stateMode === 'n00n' ? 3 : 1.5}
+            strokeOpacity={stateMode === 'n00n' ? 1 : 0.3}
             strokeDasharray={stateMode === 'n00n' ? '0' : '4 4'}
             points={noonPoints.join(' ')}
           />
@@ -513,8 +520,8 @@ export default function QuantumSensingSection({ isActive }) {
           <g>
             <line x1={currentX} y1="20" x2={currentX} y2="130" stroke={activeColor} strokeWidth="2" strokeDasharray="3 3" />
             <circle cx={currentX} cy={currentY} r="6" fill={activeColor} stroke="#fff" strokeWidth="2" />
-            <text x={Math.min(540, currentX + 8)} y={Math.max(35, currentY - 8)} fontSize="11" fontWeight="800" fill={activeColor}>
-              &theta; = {theta.toFixed(2)} rad ({(p0 * 100).toFixed(0)}%)
+            <text x={Math.min(540, parseFloat(currentX) + 8)} y={Math.max(35, parseFloat(currentY) - 8)} fontSize="11" fontWeight="800" fill={activeColor}>
+              &theta; = {thetaNum.toFixed(2)} rad ({(p0 * 100).toFixed(0)}%)
             </text>
           </g>
         </svg>

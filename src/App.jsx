@@ -6,6 +6,7 @@ import SearchPuzzleSection from './components/SearchPuzzleSection';
 import QuantumSensingSection from './components/QuantumSensingSection';
 import RamseyMetrologySection from './components/RamseyMetrologySection';
 import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -16,12 +17,23 @@ export default function App() {
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main style={{ minHeight: '600px' }}>
-        {activeTab === 'home' && <OverviewSection />}
-        {activeTab === 'search' && <SearchPuzzleSection />}
-        {activeTab === 'sensing' && (
-          <QuantumSensingSection isActive={activeTab === 'sensing'} />
-        )}
-        {activeTab === 'ramsey' && <RamseyMetrologySection />}
+        <ErrorBoundary>
+          {activeTab === 'home' && <OverviewSection />}
+        </ErrorBoundary>
+
+        <ErrorBoundary>
+          {activeTab === 'search' && <SearchPuzzleSection />}
+        </ErrorBoundary>
+
+        <ErrorBoundary>
+          {activeTab === 'sensing' && (
+            <QuantumSensingSection isActive={activeTab === 'sensing'} />
+          )}
+        </ErrorBoundary>
+
+        <ErrorBoundary>
+          {activeTab === 'ramsey' && <RamseyMetrologySection />}
+        </ErrorBoundary>
       </main>
 
       <Footer />
