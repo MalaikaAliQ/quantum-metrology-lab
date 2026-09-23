@@ -85,9 +85,9 @@ nav:hover {
 }
 
 .nav-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   object-fit: cover;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
   transition: transform 0.3s ease, box-shadow 0.3s ease;

@@ -14,6 +14,7 @@ export default function SearchPuzzleSection() {
 
   // Quantum Search State
   const [qSteps, setQSteps] = useState('0');
+  const [qTime, setQTime] = useState(0);
   const [amps, setAmps] = useState(() => Array(16).fill(0.25));
   const [qStatus, setQStatus] = useState('Initialized: uniform state |ψ⟩ = 1/4 Σ |x⟩.');
   const [qHit, setQHit] = useState(false);
@@ -38,6 +39,7 @@ export default function SearchPuzzleSection() {
     setCStatus('Ready.');
 
     setQSteps('0');
+    setQTime(0);
     setAmps(Array(16).fill(0.25));
     setQStatus('Initialized: uniform state |ψ⟩ = 1/4 Σ |x⟩.');
     setQHit(false);
@@ -89,6 +91,7 @@ export default function SearchPuzzleSection() {
 
     const t1 = setTimeout(() => {
       setQSteps('1 (Oracle)');
+      setQTime(0.25);
       setAmps(marked);
       setStepCountForTargetHighlight(1);
       setQStatus('Oracle applied: negative phase on |target⟩. Probabilities remain 6.25%.');
@@ -96,12 +99,14 @@ export default function SearchPuzzleSection() {
 
     const t2 = setTimeout(() => {
       setQSteps('1 (Diffusion)');
+      setQTime(0.38);
       setAmps(diff);
       setQStatus('Diffusion complete: constructive interference elevates marked state.');
     }, 1300);
 
     const t3 = setTimeout(() => {
       setQSteps('2 (Final Amplification)');
+      setQTime(0.50);
       setAmps(finalAmps);
       setQHit(true);
       setQStatus('Target state probability reaches ~90%. Ready for single measurement.');
@@ -206,10 +211,14 @@ export default function SearchPuzzleSection() {
               );
             })}
           </div>
-          <div className="grid two" style={{ marginTop: '14px' }}>
+          <div className="grid three" style={{ marginTop: '14px' }}>
             <div className="stat">
               <div className="label">Grover Iterations</div>
               <div className="value">{qSteps}</div>
+            </div>
+            <div className="stat">
+              <div className="label">Time (Illustrative)</div>
+              <div className="value" style={{ color: 'var(--green)' }}>{qTime.toFixed(2)} s</div>
             </div>
             <div className="stat">
               <div className="label">
