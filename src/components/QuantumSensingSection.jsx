@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RotateCcw, Zap, Sparkles, Activity, ShieldCheck } from 'lucide-react';
+import { RotateCcw, Zap, Sparkles, Activity } from 'lucide-react';
 
 export default function QuantumSensingSection({ isActive }) {
   const [theta, setTheta] = useState(1.57); // radians (~90 deg)
@@ -105,7 +105,7 @@ export default function QuantumSensingSection({ isActive }) {
     };
   }, []);
 
-  // Main 3D Canvas Render Loop
+  // Main 3D Canvas Render Loop with fixed sizing
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -114,9 +114,23 @@ export default function QuantumSensingSection({ isActive }) {
     const ctx = canvas.getContext('2d');
     const isEntangled = stateMode === 'n00n';
 
+    const resizeCanvas = () => {
+      if (container && canvas) {
+        const w = container.clientWidth || 800;
+        const h = container.clientHeight || 460;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
     const render = () => {
-      const width = (canvas.width = container.clientWidth);
-      const height = (canvas.height = container.clientHeight);
+      const width = canvas.width || 800;
+      const height = canvas.height || 460;
 
       ctx.fillStyle = '#05070e';
       ctx.fillRect(0, 0, width, height);
@@ -307,11 +321,12 @@ export default function QuantumSensingSection({ isActive }) {
     render();
 
     return () => {
+      window.removeEventListener('resize', resizeCanvas);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, nEff, projectMzi]);
+  }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, nEff, projectMzi, isActive]);
 
   return (
     <section className="active">
