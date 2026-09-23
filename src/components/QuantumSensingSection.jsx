@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RotateCcw, Zap } from 'lucide-react';
+import { RotateCcw, Zap, Sparkles, Activity, ShieldCheck } from 'lucide-react';
 
 export default function QuantumSensingSection({ isActive }) {
   const [theta, setTheta] = useState(1.57); // radians (~90 deg)
@@ -16,19 +16,24 @@ export default function QuantumSensingSection({ isActive }) {
   const animationFrameRef = useRef(null);
   const pulseRef = useRef({ progress: 0, isPulsing: false });
 
+  // Effective Super-resolution factor for NOON state visualization
+  const nEff = Math.min(8, Math.max(2, Math.round(Math.log2(nPhotons) + 1)));
+
   // Compute intensities
   const p0 = stateMode === 'coherent'
     ? Math.cos(theta / 2) ** 2
-    : Math.cos((nPhotons * theta) / 2) ** 2;
+    : Math.cos((nEff * theta) / 2) ** 2;
   const p1 = 1 - p0;
 
   const sqlVal = (1 / Math.sqrt(nPhotons)).toFixed(4);
   const hlVal = (1 / nPhotons).toFixed(4);
+  const sensitivityGain = Math.sqrt(nPhotons).toFixed(1);
   const thetaDeg = (theta * 180 / Math.PI).toFixed(0);
 
   // 3D Nodes
   const mziNodes = {
     laser: { x: -220, y: 0, z: 0 },
+    spdc:  { x: -155, y: 0, z: 0 },
     bs1:   { x: -90,  y: 0, z: 0 },
     mTop:  { x: -90,  y: 0, z: -100 },
     mBot:  { x: 90,   y: 0, z: 100 },
@@ -107,6 +112,7 @@ export default function QuantumSensingSection({ isActive }) {
     if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
+    const isEntangled = stateMode === 'n00n';
 
     const render = () => {
       const width = (canvas.width = container.clientWidth);
@@ -121,7 +127,7 @@ export default function QuantumSensingSection({ isActive }) {
         const pA = projectMzi(gx, 40, -160, width, height, rotX, rotY);
         const pB = projectMzi(gx, 40, 160, width, height, rotX, rotY);
         if (pA && pB) {
-          ctx.strokeStyle = 'rgba(30, 41, 59, 0.5)';
+          ctx.strokeStyle = isEntangled ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.5)';
           ctx.beginPath();
           ctx.moveTo(pA.x, pA.y);
           ctx.lineTo(pB.x, pB.y);
@@ -132,7 +138,7 @@ export default function QuantumSensingSection({ isActive }) {
         const pA = projectMzi(-260, 40, gz, width, height, rotX, rotY);
         const pB = projectMzi(260, 40, gz, width, height, rotX, rotY);
         if (pA && pB) {
-          ctx.strokeStyle = 'rgba(30, 41, 59, 0.5)';
+          ctx.strokeStyle = isEntangled ? 'rgba(88, 28, 135, 0.4)' : 'rgba(30, 41, 59, 0.5)';
           ctx.beginPath();
           ctx.moveTo(pA.x, pA.y);
           ctx.lineTo(pB.x, pB.y);
@@ -146,7 +152,7 @@ export default function QuantumSensingSection({ isActive }) {
         if (p1Point && p2Point) {
           if (glow) {
             ctx.shadowColor = color;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = isEntangled ? 14 : 8;
           }
           ctx.strokeStyle = color;
           ctx.lineWidth = w * p1Point.scale;
@@ -158,38 +164,38 @@ export default function QuantumSensingSection({ isActive }) {
         }
       };
 
-      // Beams
-      drawBeam(mziNodes.laser, mziNodes.bs1, '#ef4444', 3.5, true);
+      // Color themes based on Quantum State
+      const laserColor = isEntangled ? '#c084fc' : '#ef4444';
+      const armColor = isEntangled ? '#e879f9' : '#38bdf8';
+      const armWidth = isEntangled ? 3.5 : 2.5;
+
+      // Laser to BS1 (through SPDC crystal if entangled)
+      drawBeam(mziNodes.laser, mziNodes.spdc, laserColor, 3.5, true);
+      drawBeam(mziNodes.spdc, mziNodes.bs1, isEntangled ? '#f0abfc' : laserColor, 3.5, true);
+
       // Upper Arm
-      drawBeam(mziNodes.bs1, mziNodes.mTop, '#38bdf8', 2.5);
-      drawBeam(mziNodes.mTop, { x: 90, y: 0, z: -100 }, '#38bdf8', 2.5);
-      drawBeam({ x: 90, y: 0, z: -100 }, mziNodes.bs2, '#38bdf8', 2.5);
+      drawBeam(mziNodes.bs1, mziNodes.mTop, armColor, armWidth, isEntangled);
+      drawBeam(mziNodes.mTop, { x: 90, y: 0, z: -100 }, armColor, armWidth, isEntangled);
+      drawBeam({ x: 90, y: 0, z: -100 }, mziNodes.bs2, armColor, armWidth, isEntangled);
+
       // Lower Arm
-      drawBeam(mziNodes.bs1, { x: -90, y: 0, z: 100 }, '#38bdf8', 2.5);
-      drawBeam({ x: -90, y: 0, z: 100 }, mziNodes.mBot, '#38bdf8', 2.5);
-      drawBeam(mziNodes.mBot, mziNodes.bs2, '#38bdf8', 2.5);
+      drawBeam(mziNodes.bs1, { x: -90, y: 0, z: 100 }, armColor, armWidth, isEntangled);
+      drawBeam({ x: -90, y: 0, z: 100 }, mziNodes.mBot, armColor, armWidth, isEntangled);
+      drawBeam(mziNodes.mBot, mziNodes.bs2, armColor, armWidth, isEntangled);
+
       // Detectors
-      drawBeam(
-        mziNodes.bs2,
-        mziNodes.det0,
-        `rgba(16, 185, 129, ${Math.max(0.2, p0)})`,
-        3 + p0 * 3,
-        true
-      );
-      drawBeam(
-        mziNodes.bs2,
-        mziNodes.det1,
-        `rgba(168, 85, 247, ${Math.max(0.2, p1)})`,
-        3 + p1 * 3,
-        true
-      );
+      const det0Color = isEntangled ? `rgba(192, 132, 252, ${Math.max(0.3, p0)})` : `rgba(16, 185, 129, ${Math.max(0.2, p0)})`;
+      const det1Color = isEntangled ? `rgba(236, 72, 153, ${Math.max(0.3, p1)})` : `rgba(168, 85, 247, ${Math.max(0.2, p1)})`;
+
+      drawBeam(mziNodes.bs2, mziNodes.det0, det0Color, 3 + p0 * 4, true);
+      drawBeam(mziNodes.bs2, mziNodes.det1, det1Color, 3 + p1 * 4, true);
 
       // Components
-      const drawComponent = (pos, label, color, size) => {
+      const drawComponent = (pos, label, color, size, strokeColor = '#fff') => {
         const p = projectMzi(pos.x, pos.y, pos.z, width, height, rotX, rotY);
         if (p) {
           ctx.fillStyle = color;
-          ctx.strokeStyle = '#fff';
+          ctx.strokeStyle = strokeColor;
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(p.x, p.y, size * p.scale, 0, Math.PI * 2);
@@ -201,7 +207,17 @@ export default function QuantumSensingSection({ isActive }) {
         }
       };
 
-      drawComponent(mziNodes.laser, 'LASER [|ψ_in⟩]', '#ef4444', 8);
+      drawComponent(mziNodes.laser, 'PUMP LASER', laserColor, 8);
+      
+      // SPDC Non-linear Entanglement Crystal Component
+      drawComponent(
+        mziNodes.spdc,
+        isEntangled ? 'SPDC CRYSTAL [NON-LINEAR ENTANGLER]' : 'OPTICAL ISOLATOR',
+        isEntangled ? '#a855f7' : '#475569',
+        isEntangled ? 9 : 6,
+        isEntangled ? '#f472b6' : '#fff'
+      );
+
       drawComponent(mziNodes.bs1, 'BS 1 (50:50)', '#0284c7', 7);
       drawComponent(mziNodes.mTop, 'MIRROR 1', '#64748b', 6);
       drawComponent({ x: 90, y: 0, z: -100 }, 'MIRROR 2', '#64748b', 6);
@@ -217,13 +233,13 @@ export default function QuantumSensingSection({ isActive }) {
       drawComponent(
         mziNodes.det0,
         `DET 0 [${(p0 * nPhotons).toFixed(0)}]`,
-        '#10b981',
+        isEntangled ? '#c084fc' : '#10b981',
         8
       );
       drawComponent(
         mziNodes.det1,
         `DET 1 [${(p1 * nPhotons).toFixed(0)}]`,
-        '#a855f7',
+        isEntangled ? '#ec4899' : '#a855f7',
         8
       );
 
@@ -242,14 +258,43 @@ export default function QuantumSensingSection({ isActive }) {
 
           const pA = projectMzi(posP1.x, posP1.y, posP1.z, width, height, rotX, rotY);
           const pB = projectMzi(posP2.x, posP2.y, posP2.z, width, height, rotX, rotY);
+
           if (pA && pB) {
-            ctx.fillStyle = '#f59e0b';
-            ctx.beginPath();
-            ctx.arc(pA.x, pA.y, 5 * pA.scale, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(pB.x, pB.y, 5 * pB.scale, 0, Math.PI * 2);
-            ctx.fill();
+            if (isEntangled) {
+              // Draw glowing entangled twin pairs propagating in superposition along both arms
+              ctx.shadowColor = '#e879f9';
+              ctx.shadowBlur = 12;
+
+              ctx.fillStyle = '#f472b6';
+              ctx.beginPath();
+              ctx.arc(pA.x, pA.y, 6 * pA.scale, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#c084fc';
+              ctx.beginPath();
+              ctx.arc(pB.x, pB.y, 6 * pB.scale, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Draw quantum entanglement correlation bridge line
+              ctx.strokeStyle = 'rgba(232, 121, 249, 0.6)';
+              ctx.lineWidth = 1.5;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              ctx.moveTo(pA.x, pA.y);
+              ctx.lineTo(pB.x, pB.y);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.shadowBlur = 0;
+            } else {
+              // Standard single coherent photon packets
+              ctx.fillStyle = '#f59e0b';
+              ctx.beginPath();
+              ctx.arc(pA.x, pA.y, 5 * pA.scale, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.arc(pB.x, pB.y, 5 * pB.scale, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         } else {
           pulseRef.current.isPulsing = false;
@@ -266,14 +311,14 @@ export default function QuantumSensingSection({ isActive }) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, projectMzi]);
+  }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, nEff, projectMzi]);
 
   return (
     <section className="active">
       <div className="card">
         <h2>3D Quantum Optical Metrology: Mach-Zehnder Interferometer</h2>
         <p className="muted">
-          An optical field is split into two spatial arms by a 50:50 beam splitter (BS1). Arm 1 acquires an external phase shift <span class="math">&theta;</span> in a 3D phase cell. The arms recombine at BS2, causing spatial wave interference that modulates the detector ports. <b>Click and drag to rotate the optical setup.</b>
+          An optical field is split into two spatial arms by a 50:50 beam splitter (BS1). Arm 1 acquires an external phase shift <span className="math">&theta;</span> in a 3D phase cell. The arms recombine at BS2, causing spatial wave interference that modulates the detector ports. <b>Click and drag to rotate the optical setup.</b>
         </p>
 
         <div className="controls">
@@ -314,22 +359,27 @@ export default function QuantumSensingSection({ isActive }) {
               value={stateMode}
               onChange={(e) => setStateMode(e.target.value)}
               style={{
-                padding: '6px',
+                padding: '8px 12px',
                 borderRadius: '8px',
-                border: '1px solid var(--border-soft)',
+                border: stateMode === 'n00n' ? '2px solid var(--purple)' : '1px solid var(--border-soft)',
                 fontSize: '.85rem',
-                background: '#fff',
+                background: stateMode === 'n00n' ? '#f5f3ff' : '#fff',
+                color: stateMode === 'n00n' ? 'var(--purple)' : 'var(--ink)',
+                fontWeight: 700,
                 cursor: 'pointer',
               }}
             >
               <option value="coherent">Coherent Beam (Classical Shot Noise SQL: &Delta;&theta; = 1/&radic;N)</option>
-              <option value="n00n">NOON Entangled State (Quantum Heisenberg Limit: &Delta;&theta; = 1/N)</option>
+              <option value="n00n">✦ NOON Entangled State (Non-linear Quantum Heisenberg Limit: &Delta;&theta; = 1/N)</option>
             </select>
           </div>
 
-          <button className="btn primary" onClick={handlePulse}>
-            <Zap size={15} />
-            <span>Pulse Optical Packets</span>
+          <button
+            className={`btn ${stateMode === 'n00n' ? 'purple' : 'primary'}`}
+            onClick={handlePulse}
+          >
+            {stateMode === 'n00n' ? <Sparkles size={15} /> : <Zap size={15} />}
+            <span>{stateMode === 'n00n' ? 'Pulse Entangled Pairs' : 'Pulse Optical Packets'}</span>
           </button>
         </div>
       </div>
@@ -344,13 +394,19 @@ export default function QuantumSensingSection({ isActive }) {
           <canvas ref={canvasRef} />
           <div className="hud-text">
             <h4>// 3D MACH-ZEHNDER METROLOGY BENCH</h4>
-            <div>BEAM PROPAGATION: CONTINUOUS COHERENT MODES</div>
+            <div style={{ color: stateMode === 'n00n' ? '#f0abfc' : '#38bdf8', fontWeight: 700 }}>
+              MODE: {stateMode === 'n00n' ? `NOON ENTANGLED QUANTUM STATE (${nEff}x SUPER-RESOLUTION)` : 'COHERENT CLASSICAL BEAM (SQL)'}
+            </div>
             <div>PORT 0 INTENSITY: {(p0 * 100).toFixed(1)}%</div>
             <div>PORT 1 INTENSITY: {(p1 * 100).toFixed(1)}%</div>
             <div>ROTATION: [X: {rotX.toFixed(2)}, Y: {rotY.toFixed(2)}]</div>
           </div>
           <div className="hud-panel">
-            <span>Click and drag to rotate the 3D optical layout</span>
+            <span>
+              {stateMode === 'n00n'
+                ? '✦ Non-linear Entanglement Active: Twin photon superpositions & Heisenberg Super-resolution enabled'
+                : 'Click and drag to rotate the 3D optical layout'}
+            </span>
             <button
               className="btn"
               onClick={handleRecenter}
@@ -369,47 +425,154 @@ export default function QuantumSensingSection({ isActive }) {
         </div>
       </div>
 
+      {/* Dynamic Interference Fringe Curve Comparison Plot */}
+      <div className="card" style={{ marginTop: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={18} color={stateMode === 'n00n' ? 'var(--purple)' : 'var(--blue)'} />
+            <span>Interference Fringe Super-Resolution Comparison: P₀(&theta;)</span>
+          </h3>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: stateMode === 'n00n' ? 'var(--purple)' : 'var(--blue)' }}>
+            {stateMode === 'n00n' ? `Quantum Advantage: ${sensitivityGain}x Precision Boost` : 'Classical Baseline (SQL)'}
+          </div>
+        </div>
+
+        <svg viewBox="0 0 700 160" style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid var(--line)' }}>
+          {/* Axis grid lines */}
+          <line x1="50" y1="20" x2="50" y2="130" stroke="#cbd5e1" strokeWidth="1.5" />
+          <line x1="50" y1="130" x2="670" y2="130" stroke="#cbd5e1" strokeWidth="1.5" />
+          <line x1="50" y1="25" x2="670" y2="25" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1="50" y1="77.5" x2="670" y2="77.5" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
+
+          <text x="15" y="30" fontSize="10" fontWeight="700" fill="#64748b">100%</text>
+          <text x="25" y="81" fontSize="10" fill="#94a3b8">50%</text>
+          <text x="32" y="133" fontSize="10" fill="#94a3b8">0%</text>
+
+          <text x="50" y="148" fontSize="10" textAnchor="middle" fill="#64748b">0 rad</text>
+          <text x="205" y="148" fontSize="10" textAnchor="middle" fill="#64748b">&pi;/2</text>
+          <text x="360" y="148" fontSize="10" textAnchor="middle" fill="#64748b">&pi;</text>
+          <text x="515" y="148" fontSize="10" textAnchor="middle" fill="#64748b">3&pi;/2</text>
+          <text x="670" y="148" fontSize="10" textAnchor="middle" fill="#64748b">2&pi;</text>
+
+          {/* Coherent curve path */}
+          {(() => {
+            const points = [];
+            for (let x = 0; x <= 620; x += 4) {
+              const rad = (x / 620) * Math.PI * 2;
+              const val = Math.cos(rad / 2) ** 2;
+              const py = 130 - val * 105;
+              points.push(`${50 + x},${py}`);
+            }
+            return (
+              <polyline
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth={stateMode === 'coherent' ? '3' : '1.5'}
+                strokeOpacity={stateMode === 'coherent' ? '1' : '0.4'}
+                points={points.join(' ')}
+              />
+            );
+          })()}
+
+          {/* NOON Entangled curve path (nEff super-resolution cycles) */}
+          {(() => {
+            const points = [];
+            for (let x = 0; x <= 620; x += 2) {
+              const rad = (x / 620) * Math.PI * 2;
+              const val = Math.cos((nEff * rad) / 2) ** 2;
+              const py = 130 - val * 105;
+              points.push(`${50 + x},${py}`);
+            }
+            return (
+              <polyline
+                fill="none"
+                stroke="#7c3aed"
+                strokeWidth={stateMode === 'n00n' ? '3' : '1.5'}
+                strokeOpacity={stateMode === 'n00n' ? '1' : '0.3'}
+                strokeDasharray={stateMode === 'n00n' ? 'none' : '3,3'}
+                points={points.join(' ')}
+              />
+            );
+          })()}
+
+          {/* Current Theta marker vertical line */}
+          {(() => {
+            const currentX = 50 + (theta / (Math.PI * 2)) * 620;
+            const currentY = 130 - p0 * 105;
+            const color = stateMode === 'n00n' ? '#7c3aed' : '#2563eb';
+            return (
+              <g>
+                <line x1={currentX} y1="20" x2={currentX} y2="130" stroke={color} strokeWidth="2" strokeDasharray="3,3" />
+                <circle cx={currentX} cy={currentY} r="6" fill={color} stroke="#fff" strokeWidth="2" />
+                <text x={currentX + 8} y={currentY - 8} fontSize="11" fontWeight="800" fill={color}>
+                  &theta; = {theta.toFixed(2)} rad ({(p0 * 100).toFixed(0)}%)
+                </text>
+              </g>
+            );
+          })()}
+        </svg>
+
+        <div style={{ display: 'flex', gap: '20px', marginTop: '10px', fontSize: '0.82rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '4px', background: '#2563eb', borderRadius: '2px' }} />
+            <span><b>Coherent Beam (Classical):</b> Standard 1&times; Period &mdash; Shot-Noise SQL Limit (&Delta;&theta; = 1/&radic;N)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '4px', background: '#7c3aed', borderRadius: '2px' }} />
+            <span><b>NOON Entangled State (Quantum):</b> {nEff}&times; Super-Resolution &mdash; Heisenberg Limit (&Delta;&theta; = 1/N)</span>
+          </div>
+        </div>
+      </div>
+
       {/* Equations & fundamental limits */}
       <div className="grid two" style={{ marginTop: '16px' }}>
         <div className="card">
           <h3>Interferometer State Equations</h3>
           <p>
-            1. <b>Input State:</b> Mode <span className="math">a</span> receives coherent photons; Mode <span className="math">b</span> enters as vacuum <span className="math">|0&rang;</span>.
+            1. <b>Input State Transformation:</b> Mode <span className="math">a</span> receives photons; Non-linear SPDC crystal prepares quantum superposition:
+          </p>
+          <div className="stat" style={{ marginTop: '6px', marginBottom: '8px', background: stateMode === 'n00n' ? '#f5f3ff' : '#f8fafc' }}>
+            <span className="math" style={{ color: stateMode === 'n00n' ? 'var(--purple)' : 'var(--ink)' }}>
+              {stateMode === 'n00n'
+                ? '|&psi;<sub>NOON</sub>&rang; = (|N, 0&rang; + |0, N&rang;) / &radic;2'
+                : '|&psi;<sub>in</sub>&rang; = |&alpha;&rang;<sub>a</sub> &otimes; |0&rang;<sub>b</sub>'}
+            </span>
+          </div>
+          <p>
+            2. <b>Phase Shift Operator:</b> <span className="math"><b>U</b>(&theta;) = exp(i &theta; a&dagger;a)</span>, mapping entangled state to <span className="math">(e<sup>i N &theta;</sup>|N, 0&rang; + |0, N&rang;)/&radic;2</span>.
           </p>
           <p>
-            2. <b>BS1 Unitary Transform:</b> Creates the spatial superposition <span className="math">|&psi;&sbmulti;1&rang; = (|1, 0&rang; + |0, 1&rang;)/&radic;2</span>.
+            3. <b>Super-resolution Fringe Modulations:</b>
           </p>
-          <p>
-            3. <b>Phase Shift Operator:</b> <span className="math"><b>U</b>(&theta;) = exp(i &theta; a&dagger;a)</span>, mapping state to <span className="math">(e<sup>i&theta;</sup>|1, 0&rang; + |0, 1&rang;)/&radic;2</span>.
-          </p>
-          <p>
-            4. <b>Recombination (BS2):</b> Interference converts phase modulation into photon flux difference:
-          </p>
-          <div className="stat" style={{ marginTop: '10px', background: '#f8fafc' }}>
-            <span className="math">&lang;N&sub0; &minus; N&sub1;&rang; = N &middot; cos(&theta;)</span>
+          <div className="stat" style={{ marginTop: '6px', background: '#f8fafc' }}>
+            <span className="math">
+              {stateMode === 'n00n'
+                ? 'P&sub0;(&theta;) = cos&sup2;(N &middot; &theta; / 2)'
+                : 'P&sub0;(&theta;) = cos&sup2;(&theta; / 2)'}
+            </span>
           </div>
         </div>
 
         <div className="card">
           <h3>Fundamental Metrological Limits</h3>
           <div className="grid two">
-            <div className="stat">
+            <div className="stat" style={{ borderColor: stateMode === 'coherent' ? 'var(--blue)' : 'var(--line)' }}>
               <div className="label">Standard Quantum Limit (SQL)</div>
               <div className="value" style={{ fontSize: '1.15rem' }}>
                 &Delta;&theta; = {sqlVal} rad
               </div>
               <small className="muted">Classical shot noise: 1 / &radic;N</small>
             </div>
-            <div className="stat">
-              <div className="label">Heisenberg Limit (HL)</div>
+            <div className="stat" style={{ borderColor: stateMode === 'n00n' ? 'var(--purple)' : 'var(--line)', background: stateMode === 'n00n' ? '#f5f3ff' : '#fff' }}>
+              <div className="label" style={{ color: stateMode === 'n00n' ? 'var(--purple)' : 'var(--muted)' }}>Heisenberg Limit (HL)</div>
               <div className="value" style={{ fontSize: '1.15rem', color: 'var(--purple)' }}>
                 &Delta;&theta; = {hlVal} rad
               </div>
               <small className="muted">Entangled states (|N,0&rang;+|0,N&rang;): 1 / N</small>
             </div>
           </div>
-          <p className="note" style={{ marginTop: '14px' }}>
-            <b>Quantum Advantage in Sensing:</b> By utilizing quantum entanglement (such as squeezed vacuum states injected into BS1's unused port, or NOON states), the measurement uncertainty narrows from the classical shot-noise limit <span className="math">&Delta;&theta; = 1/&radic;N</span> down to the fundamental quantum Heisenberg limit <span className="math">&Delta;&theta; = 1/N</span>. This exact technique enables gravitational wave detectors (LIGO/Virgo) to measure phase shifts of <span className="math">10<sup>&minus;10</sup> rad</span>.
+          <p className="note" style={{ marginTop: '14px', background: stateMode === 'n00n' ? '#f5f3ff' : 'var(--gold-light)', color: stateMode === 'n00n' ? '#5b21b6' : '#78350f', borderLeftColor: stateMode === 'n00n' ? 'var(--purple)' : 'var(--gold)' }}>
+            <b>Quantum Advantage in Sensing:</b> By utilizing non-linear quantum entanglement (such as NOON states generated via SPDC), measurement sensitivity improves by a factor of <b>{sensitivityGain}&times;</b> over classical light ($1/N$ vs $1/\sqrt{N}$). This quantum advantage enables next-generation atomic optical clocks, gravitational wave interferometry (LIGO), and biological sub-shot-noise microscopy.
           </p>
         </div>
       </div>
