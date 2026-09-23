@@ -547,22 +547,26 @@ export default function QuantumSensingSection({ isActive }) {
           </p>
           <div className="stat" style={{ marginTop: '6px', marginBottom: '8px', background: stateMode === 'n00n' ? '#f5f3ff' : '#f8fafc' }}>
             <span className="math" style={{ color: stateMode === 'n00n' ? 'var(--purple)' : 'var(--ink)' }}>
-              {stateMode === 'n00n'
-                ? '|&psi;<sub>NOON</sub>&rang; = (|N, 0&rang; + |0, N&rang;) / &radic;2'
-                : '|&psi;<sub>in</sub>&rang; = |&alpha;&rang;<sub>a</sub> &otimes; |0&rang;<sub>b</sub>'}
+              {stateMode === 'n00n' ? (
+                <span>|ψ<sub>NOON</sub>⟩ = (|N, 0⟩ + |0, N⟩) / √2</span>
+              ) : (
+                <span>|ψ<sub>in</sub>⟩ = |α⟩<sub>a</sub> ⊗ |0⟩<sub>b</sub></span>
+              )}
             </span>
           </div>
           <p>
-            2. <b>Phase Shift Operator:</b> <span className="math"><b>U</b>(&theta;) = exp(i &theta; a&dagger;a)</span>, mapping entangled state to <span className="math">(e<sup>i N &theta;</sup>|N, 0&rang; + |0, N&rang;)/&radic;2</span>.
+            2. <b>Phase Shift Operator:</b> <span className="math"><b>U</b>(θ) = exp(i θ a<sup>†</sup>a), mapping entangled state to (e<sup>i N θ</sup>|N, 0⟩ + |0, N⟩) / √2</span>.
           </p>
           <p>
             3. <b>Super-resolution Fringe Modulations:</b>
           </p>
           <div className="stat" style={{ marginTop: '6px', background: '#f8fafc' }}>
             <span className="math">
-              {stateMode === 'n00n'
-                ? 'P&sub0;(&theta;) = cos&sup2;(N &middot; &theta; / 2)'
-                : 'P&sub0;(&theta;) = cos&sup2;(&theta; / 2)'}
+              {stateMode === 'n00n' ? (
+                <span>P<sub>0</sub>(θ) = cos<sup>2</sup>(N · θ / 2)</span>
+              ) : (
+                <span>P<sub>0</sub>(θ) = cos<sup>2</sup>(θ / 2)</span>
+              )}
             </span>
           </div>
         </div>
@@ -582,7 +586,7 @@ export default function QuantumSensingSection({ isActive }) {
               <div className="value" style={{ fontSize: '1.15rem', color: 'var(--purple)' }}>
                 &Delta;&theta; = {hlVal} rad
               </div>
-              <small className="muted">Entangled states (|N,0&rang;+|0,N&rang;): 1 / N</small>
+              <small className="muted">Entangled states (|N,0⟩+|0,N⟩): 1 / N</small>
             </div>
           </div>
           <p className="note" style={{ marginTop: '14px', background: stateMode === 'n00n' ? '#f5f3ff' : 'var(--gold-light)', color: stateMode === 'n00n' ? '#5b21b6' : '#78350f', borderLeftColor: stateMode === 'n00n' ? 'var(--purple)' : 'var(--gold)' }}>
