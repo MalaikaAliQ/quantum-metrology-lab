@@ -328,6 +328,27 @@ export default function QuantumSensingSection({ isActive }) {
     };
   }, [rotX, rotY, theta, nPhotons, stateMode, p0, p1, nEff, projectMzi, isActive]);
 
+  // Generate polyline points for baseline and super-resolution curves safely
+  const coherentPoints = [];
+  for (let x = 0; x <= 620; x += 4) {
+    const rad = (x / 620) * Math.PI * 2;
+    const val = Math.cos(rad / 2) ** 2;
+    const py = 130 - val * 105;
+    coherentPoints.push(`${50 + x},${py.toFixed(1)}`);
+  }
+
+  const noonPoints = [];
+  for (let x = 0; x <= 620; x += 2) {
+    const rad = (x / 620) * Math.PI * 2;
+    const val = Math.cos((nEff * rad) / 2) ** 2;
+    const py = 130 - val * 105;
+    noonPoints.push(`${50 + x},${py.toFixed(1)}`);
+  }
+
+  const currentX = 50 + (theta / (Math.PI * 2)) * 620;
+  const currentY = 130 - p0 * 105;
+  const activeColor = stateMode === 'n00n' ? '#7c3aed' : '#2563eb';
+
   return (
     <section className="active">
       <div className="card">
@@ -456,8 +477,8 @@ export default function QuantumSensingSection({ isActive }) {
           {/* Axis grid lines */}
           <line x1="50" y1="20" x2="50" y2="130" stroke="#cbd5e1" strokeWidth="1.5" />
           <line x1="50" y1="130" x2="670" y2="130" stroke="#cbd5e1" strokeWidth="1.5" />
-          <line x1="50" y1="25" x2="670" y2="25" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
-          <line x1="50" y1="77.5" x2="670" y2="77.5" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1="50" y1="25" x2="670" y2="25" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+          <line x1="50" y1="77.5" x2="670" y2="77.5" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
 
           <text x="15" y="30" fontSize="10" fontWeight="700" fill="#64748b">100%</text>
           <text x="25" y="81" fontSize="10" fill="#94a3b8">50%</text>
@@ -470,61 +491,32 @@ export default function QuantumSensingSection({ isActive }) {
           <text x="670" y="148" fontSize="10" textAnchor="middle" fill="#64748b">2&pi;</text>
 
           {/* Coherent curve path */}
-          {(() => {
-            const points = [];
-            for (let x = 0; x <= 620; x += 4) {
-              const rad = (x / 620) * Math.PI * 2;
-              const val = Math.cos(rad / 2) ** 2;
-              const py = 130 - val * 105;
-              points.push(`${50 + x},${py}`);
-            }
-            return (
-              <polyline
-                fill="none"
-                stroke="#2563eb"
-                strokeWidth={stateMode === 'coherent' ? '3' : '1.5'}
-                strokeOpacity={stateMode === 'coherent' ? '1' : '0.4'}
-                points={points.join(' ')}
-              />
-            );
-          })()}
+          <polyline
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth={stateMode === 'coherent' ? '3' : '1.5'}
+            strokeOpacity={stateMode === 'coherent' ? '1' : '0.4'}
+            points={coherentPoints.join(' ')}
+          />
 
           {/* NOON Entangled curve path (nEff super-resolution cycles) */}
-          {(() => {
-            const points = [];
-            for (let x = 0; x <= 620; x += 2) {
-              const rad = (x / 620) * Math.PI * 2;
-              const val = Math.cos((nEff * rad) / 2) ** 2;
-              const py = 130 - val * 105;
-              points.push(`${50 + x},${py}`);
-            }
-            return (
-              <polyline
-                fill="none"
-                stroke="#7c3aed"
-                strokeWidth={stateMode === 'n00n' ? '3' : '1.5'}
-                strokeOpacity={stateMode === 'n00n' ? '1' : '0.3'}
-                strokeDasharray={stateMode === 'n00n' ? 'none' : '3,3'}
-                points={points.join(' ')}
-              />
-            );
-          })()}
+          <polyline
+            fill="none"
+            stroke="#7c3aed"
+            strokeWidth={stateMode === 'n00n' ? '3' : '1.5'}
+            strokeOpacity={stateMode === 'n00n' ? '1' : '0.3'}
+            strokeDasharray={stateMode === 'n00n' ? '0' : '4 4'}
+            points={noonPoints.join(' ')}
+          />
 
           {/* Current Theta marker vertical line */}
-          {(() => {
-            const currentX = 50 + (theta / (Math.PI * 2)) * 620;
-            const currentY = 130 - p0 * 105;
-            const color = stateMode === 'n00n' ? '#7c3aed' : '#2563eb';
-            return (
-              <g>
-                <line x1={currentX} y1="20" x2={currentX} y2="130" stroke={color} strokeWidth="2" strokeDasharray="3,3" />
-                <circle cx={currentX} cy={currentY} r="6" fill={color} stroke="#fff" strokeWidth="2" />
-                <text x={currentX + 8} y={currentY - 8} fontSize="11" fontWeight="800" fill={color}>
-                  &theta; = {theta.toFixed(2)} rad ({(p0 * 100).toFixed(0)}%)
-                </text>
-              </g>
-            );
-          })()}
+          <g>
+            <line x1={currentX} y1="20" x2={currentX} y2="130" stroke={activeColor} strokeWidth="2" strokeDasharray="3 3" />
+            <circle cx={currentX} cy={currentY} r="6" fill={activeColor} stroke="#fff" strokeWidth="2" />
+            <text x={Math.min(540, currentX + 8)} y={Math.max(35, currentY - 8)} fontSize="11" fontWeight="800" fill={activeColor}>
+              &theta; = {theta.toFixed(2)} rad ({(p0 * 100).toFixed(0)}%)
+            </text>
+          </g>
         </svg>
 
         <div style={{ display: 'flex', gap: '20px', marginTop: '10px', fontSize: '0.82rem' }}>
