@@ -586,7 +586,7 @@ export default function QuantumSensingSection({ isActive }) {
             </div>
           </div>
           <p className="note" style={{ marginTop: '14px', background: stateMode === 'n00n' ? '#f5f3ff' : 'var(--gold-light)', color: stateMode === 'n00n' ? '#5b21b6' : '#78350f', borderLeftColor: stateMode === 'n00n' ? 'var(--purple)' : 'var(--gold)' }}>
-            <b>Quantum Advantage in Sensing:</b> By utilizing non-linear quantum entanglement (such as NOON states generated via SPDC), measurement sensitivity improves by a factor of <b>{sensitivityGain}&times;</b> over classical light ($1/N$ vs $1/\sqrt{N}$). This quantum advantage enables next-generation atomic optical clocks, gravitational wave interferometry (LIGO), and biological sub-shot-noise microscopy.
+            <b>Quantum Advantage in Sensing:</b> By utilizing non-linear quantum entanglement (such as NOON states generated via SPDC), measurement sensitivity improves by a factor of <b>{sensitivityGain}&times;</b> over classical light (1/N vs 1/&radic;N). This quantum advantage enables next-generation atomic optical clocks, gravitational wave interferometry (LIGO), and biological sub-shot-noise microscopy.
           </p>
         </div>
       </div>
