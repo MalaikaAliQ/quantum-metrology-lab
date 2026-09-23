@@ -13,8 +13,9 @@ export default function App() {
 
   return (
     <div className="wrap">
-      <HeroHeader />
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      <HeroHeader />
 
       <main style={{ minHeight: '600px' }}>
         <ErrorBoundary>

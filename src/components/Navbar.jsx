@@ -11,25 +11,31 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
   return (
     <nav id="nav">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = activeTab === item.id;
-        return (
-          <button
-            key={item.id}
-            className={isActive ? 'active' : ''}
-            onClick={() => setActiveTab(item.id)}
-            style={
-              item.highlight && !isActive
-                ? { color: 'var(--blue)', fontWeight: 700 }
-                : {}
-            }
-          >
-            <Icon size={16} />
-            <span>{item.label}</span>
-          </button>
-        );
-      })}
+      <div className="nav-brand">
+        <img src="/logo.jpg" alt="Quantum Lab Logo" className="nav-logo" />
+        <span className="nav-title">QML</span>
+      </div>
+      <div className="nav-tabs">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              className={isActive ? 'active' : ''}
+              onClick={() => setActiveTab(item.id)}
+              style={
+                item.highlight && !isActive
+                  ? { color: 'var(--blue)', fontWeight: 700 }
+                  : {}
+              }
+            >
+              <Icon size={16} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
